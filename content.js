@@ -1,7 +1,5 @@
 
-
 async function generateSolutionWithGemini(descriptionText) {
-    // On envoie le texte au Service Worker pour qu'il gère l'appel API
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({ action: "generate_solution", description: descriptionText }, (response) => {
             if (response.error) {
