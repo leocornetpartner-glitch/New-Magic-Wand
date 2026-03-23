@@ -1,10 +1,18 @@
 {
-  "name": "New Magic Wand",
-  "description": "SMA-X magic wand",
-  "version": "1.0",
   "manifest_version": 3,
-  "action": {
-    "default_popup": "hello.html",
-    "default_icon": "baguetteMagique.png"
-  }
+  "name": "Decathlon Magic Wand",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["https://support.decathlon.net/saw/Request/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["baguetteMagique.png"],
+      "matches": ["https://support.decathlon.net/*"]
+    }
+  ]
 }
