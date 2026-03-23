@@ -7,8 +7,6 @@ const PROJECT_ID = 'project-id-1814974603426480963'; // Remplace par ton ID de p
 const LOCATION = 'europe-west9'; // Ou une région européenne si supportée par Gemini Pro
 const MODEL_ID = 'gemini-1.5-flash'; // Ou le modèle spécifique pour Vertex AI
 
-const API_KEY = 'AIzaSyB9uu7_HwcVm2V0NgWTs7C5jAIx0JEvqng'; // Ta clé API Vertex
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "generate_solution") {
         
