@@ -1,3 +1,17 @@
+
+
+async function generateSolutionWithGemini(descriptionText) {
+    // On envoie le texte au Service Worker pour qu'il gère l'appel API
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ action: "generate_solution", description: descriptionText }, (response) => {
+            if (response.error) {
+                reject(new Error(response.error));
+            } else {
+                resolve(response.solution);
+            }
+        });
+    });
+}
 let vertexAiKey = '';
 function injectMagicButton() {
     const toolbars = document.querySelectorAll('.cke_toolbox');
@@ -54,3 +68,4 @@ function injectMagicButton() {
 const observer = new MutationObserver(() => injectMagicButton());
 observer.observe(document.body, { childList: true, subtree: true });
 injectMagicButton();
+// content.js (fin du fichier)
