@@ -1,8 +1,10 @@
-
+// 1. Rétablissement de la fonction de communication avec Gemini
 async function generateSolutionWithGemini(descriptionText) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({ action: "generate_solution", description: descriptionText }, (response) => {
-            if (response.error) {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+            } else if (response && response.error) {
                 reject(new Error(response.error));
             } else {
                 resolve(response.solution);
@@ -10,21 +12,23 @@ async function generateSolutionWithGemini(descriptionText) {
         });
     });
 }
-let vertexAiKey = '';
+
+// 2. Fonction d'injection ciblée
 function injectMagicButton() {
-    // 1. On cherche toutes les boîtes à outils de l'éditeur
+    // Dans SMAX, l'éditeur de solution est souvent dans une div avec l'ID cke_2
+    // On va chercher toutes les boîtes à outils
     const toolboxes = document.querySelectorAll('.cke_toolbox');
 
     toolboxes.forEach((toolbox) => {
-        // 2. On remonte au parent pour trouver le label de cette section
-        // Dans ton HTML, le label "Solution" est dans .cke_voice_label juste avant la toolbox
+        // Vérification du label pour être sûr d'être sur "Solution"
         const voiceLabel = toolbox.previousElementSibling;
-        
-        if (voiceLabel && voiceLabel.textContent.trim() === "Solution") {
-            // 3. On cible le groupe d'outils où se trouve l'icône image
+        const isSolution = voiceLabel && voiceLabel.textContent.trim().toLowerCase() === 'solution';
+
+        if (isSolution) {
+            // Sécurisation de la ligne 21 : on cherche le groupe de boutons
             const targetGroup = toolbox.querySelector('.cke_toolbar_last .cke_toolgroup');
             
-            // On vérifie si notre bouton n'existe pas déjà
+            // Si le groupe existe et que notre baguette n'y est pas encore
             if (targetGroup && !targetGroup.querySelector('#cke_magic_wand')) {
                 
                 const iconUrl = chrome.runtime.getURL("baguetteMagique.png");
@@ -32,7 +36,7 @@ function injectMagicButton() {
                 const magicBtn = document.createElement('a');
                 magicBtn.id = 'cke_magic_wand';
                 magicBtn.className = 'cke_button cke_button_off';
-                magicBtn.title = 'Générer une réponse avec Gemini';
+                magicBtn.title = 'Demander à Gemini';
                 magicBtn.style.cursor = 'pointer';
                 magicBtn.innerHTML = `
                     <span class="cke_button_icon" style="background-image:url('${iconUrl}'); background-size:16px; background-position:center; background-repeat:no-repeat;">&nbsp;</span>
@@ -42,31 +46,26 @@ function injectMagicButton() {
                 magicBtn.onclick = async (e) => {
                     e.preventDefault();
                     
-                    // Récupération de la description pour l'envoyer à l'IA
-                    // On cherche le contenu du premier éditeur (Description)
+                    // Récupération de la description (ID plCkeditor1 dans ton HTML)
                     const descEditor = document.querySelector('#cke_plCkeditor1 .cke_wysiwyg_div');
-                    const descriptionText = descEditor ? descEditor.innerText : "";
+                    const rawDescription = descEditor ? descEditor.innerText : "";
 
-                    // On cherche l'éditeur de destination (Solution)
+                    // Sélection de l'éditeur de destination (celui de cette toolbox)
                     const solutionEditor = toolbox.closest('.cke_inner').querySelector('.cke_wysiwyg_div');
 
-                    if (solutionEditor && descriptionText) {
-                        solutionEditor.innerHTML = "<p><em>🪄 Gemini rédige la solution...</em></p>";
+                    if (solutionEditor && rawDescription) {
+                        solutionEditor.innerHTML = "<p><em>🪄 Gemini analyse l'incident...</em></p>";
                         
-                        // Appel au background script (Gemini)
-                        chrome.runtime.sendMessage({
-                            action: "generate_solution",
-                            description: descriptionText
-                        }, (response) => {
-                            if (response && response.solution) {
-                                solutionEditor.innerHTML = response.solution;
-                                solutionEditor.dispatchEvent(new Event('input', { bubbles: true }));
-                            } else {
-                                solutionEditor.innerHTML = "<p style='color:red;'>Erreur : impossible de contacter l'IA.</p>";
-                            }
-                        });
-                    } else if (!descriptionText) {
-                        alert("Le champ Description est vide. Gemini a besoin de texte pour travailler !");
+                        try {
+                            // Appel de la fonction IA
+                            const result = await generateSolutionWithGemini(rawDescription);
+                            solutionEditor.innerHTML = `<p>${result}</p>`;
+                            solutionEditor.dispatchEvent(new Event('input', { bubbles: true }));
+                        } catch (err) {
+                            solutionEditor.innerHTML = `<p style="color:red;">Erreur : ${err.message}</p>`;
+                        }
+                    } else if (!rawDescription) {
+                        alert("La description est vide !");
                     }
                 };
 
@@ -76,9 +75,8 @@ function injectMagicButton() {
     });
 }
 
-// Surveillance continue car SMAX recharge les composants dynamiquement
+// 3. Gestion du chargement dynamique
 const observer = new MutationObserver(() => injectMagicButton());
 observer.observe(document.body, { childList: true, subtree: true });
 
-// Premier essai au chargement
 injectMagicButton();
