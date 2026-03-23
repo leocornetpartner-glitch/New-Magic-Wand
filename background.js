@@ -3,10 +3,41 @@
 // --- CONFIGURATION VERTEX AI ---
 // IMPORTANT : Ces informations sont sensibles. Utilise l'authentification OAuth2 pour une vraie extension
 // Pour un test local, tu peux utiliser une API Key Vertex AI, mais c'est moins sécurisé.
-const PROJECT_ID = 'MON-PROJET-DECATHLON'; // Remplace par ton ID de projet GCP
-const LOCATION = 'us-central1'; // Ou une région européenne si supportée par Gemini Pro
-const MODEL_ID = 'gemini-pro'; // Ou le modèle spécifique pour Vertex AI
+const PROJECT_ID = 'project-id-1814974603426480963'; // Remplace par ton ID de projet GCP
+const LOCATION = 'europe-west9'; // Ou une région européenne si supportée par Gemini Pro
+const MODEL_ID = 'gemini-1.5-flash'; // Ou le modèle spécifique pour Vertex AI
 
+const API_KEY = 'AIzaSyB9uu7_HwcVm2V0NgWTs7C5jAIx0JEvqng'; // Ta clé API Vertex
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "generate_solution") {
+        
+        // URL spécifique pour l'API Gemini via Vertex AI avec une clé API
+        const apiUrl = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:streamGenerateContent?key=${API_KEY}`;
+
+        const prompt = `Tu es un expert support chez Decathlon. 
+        Analyse ce ticket et propose une solution courte et technique : ${request.description}`;
+
+        const requestBody = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        };
+
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // On concatène les morceaux de texte reçus (si stream)
+            const solutionText = data.map(c => c.candidates[0].content.parts[0].text).join('');
+            sendResponse({ solution: solutionText });
+        })
+        .catch(error => sendResponse({ error: error.message }));
+
+        return true; // Garde le canal de communication ouvert pour l'asynchrone
+    }
+});
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "generate_solution") {
         
