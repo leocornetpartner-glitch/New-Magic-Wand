@@ -1,56 +1,52 @@
-function addMagicButton() {
-    const targetToolbar = document.querySelector('.cke_toolbar_last .cke_toolgroup');
+function injectMagicButtons() {
+    // On cherche tous les groupes d'outils qui contiennent le bouton "Image"
+    const toolGroups = document.querySelectorAll('.cke_toolgroup');
 
-    if (targetToolbar && !document.getElementById('cke_magic_wand')) {
-        const iconUrl = chrome.runtime.getURL("baguetteMagique.png");
-        
-        const magicBtn = document.createElement('a');
-        magicBtn.id = 'cke_magic_wand';
-        magicBtn.className = 'cke_button cke_button_off';
-        magicBtn.title = 'Insérer le template Decathlon';
-        magicBtn.style.cursor = "pointer";
-        magicBtn.innerHTML = `
-            <span class="cke_button_icon" style="background-image:url('${iconUrl}'); background-size:16px; background-position:center; background-repeat:no-repeat;">&nbsp;</span>
-            <span class="cke_button_label">Magie</span>
-        `;
-
-        // L'ACTION DE MAGIE :
-        magicBtn.onclick = () => {
-            // 1. Définir ton template (tu peux utiliser du HTML)
-            const template = `
-                <p>Bonjour,</p>
-                <p>Merci d'avoir contacté le support Decathlon. J'ai bien pris note de votre demande concernant <strong>[Sujet]</strong>.</p>
-                <p>Sportivement,<br>L'équipe Support</p>
+    toolGroups.forEach((group) => {
+        // On vérifie si ce groupe contient déjà notre baguette pour ne pas doubler l'injection
+        if (group.querySelector('.cke_button__image') && !group.querySelector('#cke_magic_wand')) {
+            
+            const iconUrl = chrome.runtime.getURL("baguetteMagique.png");
+            
+            // Création du bouton
+            const magicBtn = document.createElement('a');
+            magicBtn.id = 'cke_magic_wand'; // Note : si plusieurs éditeurs, utiliser une classe plutôt qu'un ID unique
+            magicBtn.className = 'cke_button cke_button_off magic-wand-btn';
+            magicBtn.title = 'Baguette Magique Decathlon';
+            magicBtn.innerHTML = `
+                <span class="cke_button_icon" style="background-image:url('${iconUrl}'); background-size:16px; background-position:center; background-repeat:no-repeat;">&nbsp;</span>
+                <span class="cke_button_label">Magie</span>
             `;
 
-            // 2. Trouver l'iframe de CKEditor
-            // CKEditor utilise souvent une iframe pour le corps du texte
-            const editorIframe = document.querySelector('iframe.cke_wysiwyg_frame');
-            
-            if (editorIframe) {
-                const editorDoc = editorIframe.contentDocument || editorIframe.contentWindow.document;
-                const editorBody = editorDoc.querySelector('body');
+            // Action au clic
+            magicBtn.onclick = (e) => {
+                e.preventDefault();
+                
+                // On remonte au parent pour trouver l'éditeur correspondant à ce bouton précis
+                const container = group.closest('.cke_inner');
+                const editableDiv = container.querySelector('.cke_wysiwyg_div');
 
-                if (editorBody) {
-                    // On ajoute le texte à la fin (ou on remplace tout avec editorBody.innerHTML = template)
-                    editorBody.innerHTML += template;
-                    
-                    // Optionnel : On remet le focus dans l'éditeur
-                    editorBody.focus();
-                }
-            } else {
-                // Si ce n'est pas une iframe, c'est peut-être un div editable directement
-                const editableDiv = document.querySelector('.cke_editable');
                 if (editableDiv) {
+                    const template = `
+                        <p>Bonjour,</p>
+                        <p>L'ouverture du magasin a bien été enregistrée.</p>
+                        <p>Sportivement.</p>
+                    `;
+                    // On insère le texte
                     editableDiv.innerHTML += template;
+                    // On déclenche un événement input pour que CKEditor sache que le contenu a changé
+                    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
                 }
-            }
-        };
+            };
 
-        targetToolbar.appendChild(magicBtn);
-    }
+            group.appendChild(magicBtn);
+        }
+    });
 }
 
-// Surveillance du chargement
-const observer = new MutationObserver(() => addMagicButton());
+// L'interface de SMAX est dynamique, on surveille les changements du DOM
+const observer = new MutationObserver(() => injectMagicButtons());
 observer.observe(document.body, { childList: true, subtree: true });
+
+// Premier passage au chargement
+injectMagicButtons();
