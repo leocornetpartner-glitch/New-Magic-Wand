@@ -1,7 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Decathlon Magic Wand",
+  "name": "Decathlon SMAX Magic Wand",
   "version": "1.0",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://support.decathlon.net/saw/Request/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://support.decathlon.net/saw/Request/*"],
