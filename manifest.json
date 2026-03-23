@@ -1,6 +1,6 @@
 {
-  "name": "Hello Extensions",
-  "description": "Base Level Extension",
+  "name": "New Magic Wand",
+  "description": "SMA-X magic wand",
   "version": "1.0",
   "manifest_version": 3,
   "action": {
