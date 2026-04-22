@@ -2,7 +2,6 @@
 const PROJECT_ID = 'fnr-supp-aug-vpc-inix'; 
 const LOCATION = 'europe-west1'; 
 const MODEL_ID = 'gemini-2.5-flash';
-const ACCESS_TOKEN = 'ya29.a0Aa7MYiqiRsydupdf6Wy6Sgcn9NjZvGruZxWVE2udkRjJ2LiPFbzj_uzUuftRWu3cvFYFU_zU984MKEqv8VD67GSPTs7U_0K2oaMhV3XypNWuO2bT48uD6Ioc77gg6Zmaydxv0TS5imjgjZ51US0mOkXzGxUoa4-SmS071XoQl_Br8gZBu0YmCNa9ijmoqCNQGgOpLmZneucdclwvE2C5whsgZVXeZBBosP12je3M7wPJkLnGGm-nwQzZBz9GjzlIjyf9WvMtP3Va1cyCtogoOmtnT8qIFehop3U6TFujSFkOfCljakbBImuVPOdu_Gb3aqh-FnEGSSYP4AcN0AOy21fXUokG4RWcLImbdAaCgYKAdgSARESFQHGX2Mi9VNaVyjXl5RhLFn3owTf6Q0365';
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "generate_solution") {
