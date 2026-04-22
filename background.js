@@ -1,95 +1,53 @@
 // background.js
-
-// --- CONFIGURATION VERTEX AI ---
-// IMPORTANT : Ces informations sont sensibles. Utilise l'authentification OAuth2 pour une vraie extension
-// Pour un test local, tu peux utiliser une API Key Vertex AI, mais c'est moins sécurisé.
-const PROJECT_ID = 'project-id-1814974603426480963'; // Remplace par ton ID de projet GCP
-const LOCATION = 'europe-west9'; // Ou une région européenne si supportée par Gemini Pro
-const MODEL_ID = 'gemini-1.5-flash'; // Ou le modèle spécifique pour Vertex AI
+const PROJECT_ID = 'fnr-supp-aug-vpc-inix'; 
+const LOCATION = 'europe-west1'; 
+const MODEL_ID = 'gemini-2.5-flash';
+const ACCESS_TOKEN = 'ya29.a0Aa7MYiqiRsydupdf6Wy6Sgcn9NjZvGruZxWVE2udkRjJ2LiPFbzj_uzUuftRWu3cvFYFU_zU984MKEqv8VD67GSPTs7U_0K2oaMhV3XypNWuO2bT48uD6Ioc77gg6Zmaydxv0TS5imjgjZ51US0mOkXzGxUoa4-SmS071XoQl_Br8gZBu0YmCNa9ijmoqCNQGgOpLmZneucdclwvE2C5whsgZVXeZBBosP12je3M7wPJkLnGGm-nwQzZBz9GjzlIjyf9WvMtP3Va1cyCtogoOmtnT8qIFehop3U6TFujSFkOfCljakbBImuVPOdu_Gb3aqh-FnEGSSYP4AcN0AOy21fXUokG4RWcLImbdAaCgYKAdgSARESFQHGX2Mi9VNaVyjXl5RhLFn3owTf6Q0365';
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "generate_solution") {
+const apiUrl = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:generateContent`;
         
-        // URL spécifique pour l'API Gemini via Vertex AI avec une clé API
-        const apiUrl = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:streamGenerateContent?key=${API_KEY}`;
-
-        const prompt = `Tu es un expert support chez Decathlon. 
-        Analyse ce ticket et propose une solution courte et technique : ${request.description}`;
-
-        const requestBody = {
-            contents: [{ role: 'user', parts: [{ text: prompt }] }]
-        };
-
         fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
+            headers: { 
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({
+                contents: [{ 
+                    role: "user", // C'est cette ligne qui manque dans ton payload actuel !
+                    parts: [{ text: `You are an assistant for support engineers in Decathlon. By looking at the request detail and the documentation right here https://drive.google.com/drive/folders/1XPotmPx-AtONJS-WgAprcWAWC_yAW8TT to provide steps to follow for the support engineer that will manage the request : ${request.description}` }] }]
+            })
         })
         .then(response => response.json())
-        .then(data => {
-            // On concatène les morceaux de texte reçus (si stream)
-            const solutionText = data.map(c => c.candidates[0].content.parts[0].text).join('');
-            sendResponse({ solution: solutionText });
-        })
-        .catch(error => sendResponse({ error: error.message }));
+.then(data => {
+    console.log("Data received from VERTEX:", data); // Pour vérifier dans la console du Service Worker
 
-        return true; // Garde le canal de communication ouvert pour l'asynchrone
+    let solutionText = "";
+
+    // Test de la structure standard Vertex AI
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        solutionText = data.candidates[0].content.parts[0].text;
+    } 
+    // Test si c'est un tableau (format stream)
+    else if (Array.isArray(data) && data[0].candidates) {
+        solutionText = data.map(chunk => chunk.candidates[0].content.parts[0].text).join('');
     }
+    // Si une erreur est encapsulée dans le JSON
+    else if (data.error) {
+        solutionText = "Erreur API : " + data.error.message;
+    } else {
+        solutionText = "Format de réponse inconnu (voir console Service Worker)";
+    }
+
+    sendResponse({ solution: solutionText });
+})
+.catch(err => {
+    console.error("Erreur Fetch:", err);
+    sendResponse({ error: "Erreur réseau ou Token expiré : " + err.message });
 });
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "generate_solution") {
-        
-        // Récupérer la clé API stockée de manière sécurisée (OAuth est mieux)
-        chrome.storage.local.get(['vertexApiKey'], (result) => {
-            if (!result.vertexApiKey) {
-                sendResponse({ error: "Clé API Vertex AI manquante dans la configuration." });
-                return;
-            }
 
-            const apiUrl = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:streamGenerateContent?key=${result.vertexApiKey}`;
-
-            const prompt = `
-                Tu es un expert support technique Decathlon pour le portail SMAX. 
-                Voici la description d'un incident remonté par un collaborateur :
-                ---
-                ${request.description}
-                ---
-                Génère une solution claire, professionnelle et précise en français pour résoudre cet incident. 
-                N'inclus pas de salutations introductives, va directement à la solution technique.
-            `;
-
-            const requestBody = {
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.4, // Moins créatif, plus factuel
-                    maxOutputTokens: 1024
-                }
-            };
-
-            fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur API Vertex : ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Gemini stream renvoie un tableau de fragments
-                const generatedText = data.map(fragment => fragment.candidates[0].content.parts[0].text).join('');
-                sendResponse({ solution: generatedText });
-            })
-            .catch(error => {
-                sendResponse({ error: error.message });
-            });
-        });
-
-        // Nécessaire pour les réponses asynchrones
-        return true; 
+        return true; // Obligatoire pour éviter l'erreur de canal fermé
     }
 });
