@@ -5,7 +5,7 @@ const CLIENT_ID = '32677391621-bv4eu3sicn5qockp7eiqc8jvl7a94ir4.apps.googleuserc
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "generate_solution") {
-        const promptText = `You are an assistant for support engineers in Decathlon. By looking at the request detail and the documentation right here https://drive.google.com/drive/folders/1XPotmPx-AtONJS-WgAprcWAWC_yAW8TT you provide steps to follow for the support engineer that will manage the request, in 250 words maximum : ${request.description}`;
+        const promptText = `Voici les détails du ticket SMAX : ${request.description}`;
 
         const EXTENSION_ID = chrome.runtime.id; 
         const REDIRECT_URI = `https://${EXTENSION_ID}.chromiumapp.org/`;
