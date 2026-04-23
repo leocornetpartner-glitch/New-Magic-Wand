@@ -2,12 +2,10 @@
   "manifest_version": 3,
   "name": "Decathlon SMAX Magic Wand",
   "version": "1.0",
-  "key" : "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDwZZHPTxzGCNJGNhw5YLPnkcDnCg/T34KnskqWSPOHGIYJfDSWGdxD/3Qdy735/um7JndymzZIC+LTzye7GL3kjx//h5/BWOIVDavvE4PWKlI3R4pmdFaIlqrcRE6j2T18djuj3UzDKrFj9IOWeJQZVT5r3PEfejBgyfiyq8+IXBizWeEY7uwD6EccjcL9TSFwIrKtCTe1W/yvBNiUrIh2uvH3H+uCk6LFZlMUJ0P32lKJdISNGScB/XC6x4wiYUxHVfSSHn7hKZrJkwkH3I3y2qdzzN9tukDhVr6X3BTkLKQLTRTjgFzyP81R6U89QW5o66wKWxr/5Q0tcjqh2eT3AgMBAAECggEADtpXsSiNxvaSKpOUftiouCAOfFGBoaRnqcpsRu81WYPix2c/+h4y68idLGu2my5sbPHD44+pDoTqSNskKBbJQZWBc2pPxpE7tsB95QTRp0PW78kHYt+OESmUX1oHedW/fmPxUpiNWGmk3pLwjM8UAQfkfKM0Cq8KZvbtQZM3/JBSSVZ7LAuzuDTyxa1bGSANAv3dWkdRHV/r/gItXbeEgcS9Cs23/pTSmuXnc5voFmC4LkY/0E6tPSzVi8cuWlyVHiObuRZ8Mu6Wwv5e4C6afXenYReHth2VaHL71ipNuU7N18G8XZz3be62ULmzsPX+wpRMdwCadLNY3iM4r3f2AQKBgQD67kxazT+dzz77zwaxX1ijdHp8UEG2XZZo28T4huW/Xk11MNCIfsZpe7PbmkioJRoHfDFC5zewRTxQbNtJ851XIilLb3WFTAGOnx607hbcSmK9Q4zW0HNCwAXrnWFJay+t+GgK0T8ECA692PA00dr4pkk3wo776VTZUMe9IX/3gQKBgQD1QMsvSyyghujIi3O/5z7iMBOEUbYEs1P+hg6TddXRfGRbf4DnFH3ESygwnzYaMw0PdXOHB+uVMc/zU8TtCdXExb0YNgSqyzmXlbwBcl33gG1KXaMKJ3M6V07iVQFWyeeYXjtXv+F8pE8wby9lw5PLoWnxesnHTbses9GV4wnYdwKBgGGguUBSvr+NVHnwEDCOYhQmS0l2iDqFqvFdIAN5qIWOESDZPyj7+gIsSMvV+RLCbKAg56GaCAaiyVaZI7BgAgVWmy5oTRbxfWGZ8v5965MFtejhETi6nT2JLESBVMqV01UiYohi5NuSrvmaH8rNIx6+w5nYLn1ASOzMCwpAsGMBAoGAMxHl/Zgq19af/LrFRK3Ts2gNeF1HiN0K3ZJu0JgWCURc5Yy8e+IRemGoIc/VhUkiLBjqELE+hlfUFLhZ5n5IzGvcv4DoIeSlvoIIn0iAdryAhZ7QB5pFbV2m6IyI9difaGQe+VvUiY7xioVsmkVKrnmTRRyrjdwK3g7V0t9vOmsCgYBBrCLIH2tz4jz6n7Ixt3v4UahfPVdYcFVVH+tgOL5doCjUrRVONMx5V3NspnSf/zdzKacEahzkPiHBg3H+i4Oo/hZEAPqzS8GkkNl4vDZjrdchw/NomnZXcbNKor7718ELkvgOYAaZt7ZKi/FNZKOR69NqLOxEEQEw8K2EDdob9A==",
   "permissions": ["identity", "storage", "activeTab"],
-  "oauth2": {
-    "client_id": "74578480297-e08j447bekvpoumaa2e8ja8qaiq4vhk5.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/cloud-platform"]
-  },
+  "host_permissions": [
+    "https://*.run.app/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
