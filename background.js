@@ -1,6 +1,6 @@
 // background.js
 const CLOUD_RUN_URL = 'https://fnr-augmented-service-32677391621.europe-west1.run.app/generate'; 
-// Collez votre NOUVEAU Client ID "Application Web" ici
+// Collez votre NOUVEAU Client ID "Application Web" ici-
 const CLIENT_ID = '32677391621-bv4eu3sicn5qockp7eiqc8jvl7a94ir4.apps.googleusercontent.com'; 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
