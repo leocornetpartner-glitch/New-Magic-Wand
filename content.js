@@ -6,7 +6,7 @@ function formatMarkdown(text) {
         .replace(/\n/g, '<br>');
 }
 
-// --- 1. COMMUNICATION AVEC LE BACKGROUND ---
+// --- 1. COMMUNICATION AVEC LE BACKGROUND ----
 async function generateSolutionWithGemini(contextText) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({ action: "generate_solution", description: contextText }, (response) => {
@@ -126,14 +126,24 @@ function injectIAField() {
     targetNode.parentNode.insertBefore(iaRowContainer, targetNode);
     targetNode.parentNode.insertBefore(feedbackRowContainer, targetNode);
 
+    // --- NOUVELLE VARIABLE POUR STOCKER LA RÉPONSE DE L'IA ---
+    let currentAiResponseText = "";
+
     // Événements
     document.getElementById('ia-generate-btn').onclick = async (e) => {
         e.preventDefault();
         const iaDisplay = document.getElementById('ia-answer-text');
         const feedbackRow = document.getElementById('ia-feedback-container');
         iaDisplay.innerText = "🪄 Gemini analyse les données du ticket...";
+        
+        currentAiResponseText = ""; 
+        
         try {
             const result = await generateSolutionWithGemini(extractAllTicketData());
+            
+            // On sauvegarde le texte brut
+            currentAiResponseText = result; 
+            
             iaDisplay.innerHTML = formatMarkdown(result); 
             feedbackRow.style.display = "block";
         } catch (err) {
@@ -142,36 +152,38 @@ function injectIAField() {
         }
     };
 
-// --- NOUVEAU CODE : GESTION DU FEEDBACK VERS SMAX ---
-    
     // Fonction utilitaire pour extraire l'ID du ticket depuis l'URL de la page
     const getTicketId = () => {
         const match = location.href.match(/\/saw\/.*request\/(\d+)/i);
         return match ? match[1] : null;
     };
 
-    // Dans content.js
-const handleFeedback = async (isUseful) => {
-    const ticketId = getTicketId();
-    const message = isUseful ? " [BoT] AI Answer is USEFUL." : " [BoT] AI Answer is NOT USEFUL.";
+    // --- NOUVEAU COMPORTEMENT DU BOUTON (SANS FETCH) ---
+    const handleFeedback = async (isUseful) => {
+        const ticketId = getTicketId();
+        
+        // Construction du message avec le préfixe ET la réponse de l'IA
+        const feedbackPrefix = isUseful ? "<b>[BoT] L'ingénieur support a jugé cette réponse UTILE :</b><br><br>" : "<b>[BoT] L'ingénieur support a jugé cette réponse INUTILE :</b><br><br>";
+        const fullCommentText = feedbackPrefix + (currentAiResponseText || "Aucune réponse enregistrée.");
 
-    const container = document.getElementById('ia-feedback-yes').parentElement;
-    container.innerHTML = '<span style="font-size: 12px; color: #0078d4;">Enregistrement SMAX...</span>';
+        const container = document.getElementById('ia-feedback-yes').parentElement;
+        container.innerHTML = '<span style="font-size: 12px; color: #0078d4;">Enregistrement SMAX...</span>';
 
-    try {
-        // Tu appelles ton propre serveur Cloud Run sécurisé
-        const response = await fetch('https://fnr-augmented-service-32677391621.europe-west1.run.app/feedback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticketId: ticketId, feedbackText: message })
+        // Envoi au background.js qui se chargera de l'auth et de la requête
+        chrome.runtime.sendMessage({ 
+            action: "send_feedback", 
+            ticketId: ticketId, 
+            feedbackText: fullCommentText 
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                container.innerHTML = `<span style="font-size: 12px; color: #dc3545;">Erreur interne: ${chrome.runtime.lastError.message}</span>`;
+            } else if (response && response.error) {
+                container.innerHTML = `<span style="font-size: 12px; color: #dc3545;">Erreur: ${response.error}</span>`;
+            } else {
+                container.innerHTML = '<span style="font-size: 12px; color: #28a745;">Feedback enregistré sur SMAX !</span>';
+            }
         });
-
-        if (!response.ok) throw new Error("Erreur serveur");
-        container.innerHTML = '<span style="font-size: 12px; color: #28a745;">Feedback enregistré sur SMAX !</span>';
-    } catch (err) {
-        container.innerHTML = `<span style="font-size: 12px; color: #dc3545;">Erreur: ${err.message}</span>`;
-    }
-};
+    };
 
     // On attache la fonction aux boutons en passant 'true' (Oui) ou 'false' (Non)
     document.getElementById('ia-feedback-yes').onclick = () => handleFeedback(true);
@@ -191,7 +203,6 @@ function mainLoop() {
     }
 
     // REGEX ultra-stricte : S'active UNIQUEMENT si l'URL contient un ID de ticket
-    // Matche : /saw/Request/244682833  mais ignore : /saw/Requests
     if (/\/saw\/.*request\/\d+/i.test(location.href)) {
         injectIAField();
     }

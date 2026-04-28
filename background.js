@@ -1,5 +1,6 @@
 // background.js
 const CLOUD_RUN_URL = 'https://fnr-augmented-service-32677391621.europe-west1.run.app/generate'; 
+const FEEDBACK_URL = 'https://fnr-augmented-service-32677391621.europe-west1.run.app/feedback';
 // Collez votre NOUVEAU Client ID "Application Web" ici-
 const CLIENT_ID = '32677391621-bv4eu3sicn5qockp7eiqc8jvl7a94ir4.apps.googleusercontent.com'; 
 
@@ -60,5 +61,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
 
         return true; 
+    }
+    // --- NOUVEAU BLOC : GESTION DU FEEDBACK ---
+    if (request.action === "send_feedback") {
+        const EXTENSION_ID = chrome.runtime.id; 
+        const REDIRECT_URI = `https://${EXTENSION_ID}.chromiumapp.org/`;
+        const AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&response_type=id_token&redirect_uri=${REDIRECT_URI}&scope=openid%20email&nonce=12345`;
+
+        // 1. On récupère le jeton de sécurité Google
+        chrome.identity.launchWebAuthFlow({
+            url: AUTH_URL,
+            interactive: true
+        }, function(redirectUrl) {
+            if (chrome.runtime.lastError || !redirectUrl) {
+                sendResponse({ error: "Échec de l'authentification Google." });
+                return;
+            }
+
+            const urlParams = new URLSearchParams(redirectUrl.split('#')[1]);
+            const idToken = urlParams.get('id_token');
+
+            if (!idToken) {
+                sendResponse({ error: "Impossible de récupérer l'ID Token." });
+                return;
+            }
+
+            // 2. On fait le fetch vers Cloud Run AVEC le jeton Bearer
+            fetch(FEEDBACK_URL, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${idToken}`, 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ 
+                    ticketId: request.ticketId, 
+                    feedbackText: request.feedbackText 
+                })
+            })
+            .then(async (response) => {
+                if (!response.ok) {
+                    const textError = await response.text();
+                    throw new Error(`Erreur Cloud Run ${response.status} : ${textError.substring(0, 50)}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                sendResponse({ success: true });
+            })
+            .catch(err => {
+                console.error("Erreur Fetch Feedback:", err);
+                sendResponse({ error: err.message });
+            });
+        });
+
+        return true; // Obligatoire pour garder le sendResponse actif en asynchrone
     }
 });
